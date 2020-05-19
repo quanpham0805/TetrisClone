@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.util.Random;
 import java.util.ArrayList;
 
@@ -8,8 +10,8 @@ import javax.swing.JComponent;
 
 class Board extends JComponent {
 
-	private static final int SCALE = 16; // number of pixels per square
-	private int cols, rows, shape, curCol = -4, curRow = -4;
+	private static final int SCALE = 30; // number of pixels per square
+	private int cols, rows, shape, curCol = -4, curRow = -4, score = 0, bestScore = 0, rightPanelWidth;
 	private boolean canMove = false;
 	private Piece tetrisPiece = new Piece();
 	private Random rand = new Random();
@@ -21,20 +23,36 @@ class Board extends JComponent {
 		super();
 		this.cols = cols;
 		this.rows = rows;
-		setPreferredSize(new Dimension(cols * SCALE, rows * SCALE));
+		rightPanelWidth = (int)(cols * 9 / 10);
+		setPreferredSize(new Dimension(cols * SCALE + rightPanelWidth * SCALE, rows * SCALE));
 		for (int i = 0 ; i < rows ; i ++)
 		{
-			occupied.add(new ArrayList());
+			occupied.add(new ArrayList<Integer>());
 			for (int j = 0 ; j < cols ; j ++)
 				occupied.get(i).add(-1);
 		}
 	}
 
-	public void paintComponent(Graphics g) {
-		// clear the screen with black
+	public void drawBoard(Graphics g)
+	{
 		g.setColor(Color.black);
 		g.fillRect(0, 0, getWidth(), getHeight());
 
+		for (int i = 0 ; i <= cols ; i ++)
+		{
+				g.setColor(Color.gray);
+				g.fillRect(i * SCALE, 0, 1, getHeight());
+		}
+
+		for (int i = 0 ; i < rows ; i ++)
+		{
+			g.setColor(Color.gray);
+			g.fillRect(0, i * SCALE, cols * SCALE, 1);
+		}
+	}
+
+	public void paintOccupiedBlock(Graphics g)
+	{
 		for (int i = 0 ; i < rows ; i ++)
 			for (int j = 0 ; j < cols ; j ++)
 				if (occupied.get(i).get(j) != -1)
@@ -42,7 +60,10 @@ class Board extends JComponent {
 					Block bl = new Block(occupied.get(i).get(j));
 					bl.draw(g, SCALE, j, i);
 				}
+	}
 
+	public void paintCurPiece(Graphics g)
+	{
 		for (int i = 0 ; i < 4 ; i ++)
 		{
 			Block bl = new Block(shape);
@@ -53,6 +74,33 @@ class Board extends JComponent {
 		}
 	}
 
+	public void drawCenterString(Graphics g, String text, Font font, int lineNo)
+	{
+		FontMetrics metrics = g.getFontMetrics(font);
+		int x = cols * SCALE + (rightPanelWidth * SCALE - metrics.stringWidth(text)) / 2;
+		int y = SCALE * lineNo + metrics.getHeight();
+		g.setFont(font);
+		g.drawString(text, x, y);
+	}
+
+	public void paintRightPanel(Graphics g)
+	{
+		int lineNo = rows / 2;
+		Font font = new Font("Roboto", Font.PLAIN, SCALE);
+		drawCenterString(g, "Tetris!", font, 1);
+		drawCenterString(g, "Press R to restart", font, rows - 3);
+		drawCenterString(g, Integer.toString(score), font, lineNo - 2);
+		drawCenterString(g, "Score", font, lineNo - 3);
+		drawCenterString(g, "Record", font, lineNo);
+		drawCenterString(g, Integer.toString(bestScore), font, lineNo + 1);
+	}
+
+	public void paintComponent(Graphics g) {
+		drawBoard(g);
+		paintOccupiedBlock(g);
+		paintCurPiece(g);
+		paintRightPanel(g);
+	}
 
 	public boolean checkCollision()
 	{
@@ -66,7 +114,7 @@ class Board extends JComponent {
 		return false;
 	}
 
-	public void paintBoard()
+	public void setPermaBlock()
 	{
 		for (int i = 0 ; i < 4 ; i ++)
 		{
@@ -85,9 +133,33 @@ class Board extends JComponent {
 		}
 	}
 
+	public void restartGame()
+	{
+		clearBoard();
+		score = 0;
+		canMove = false;
+	}
+
+
+	public int simplePower(int x, int n)
+	{
+		int result = 1;
+		for (int i = 0 ; i < n ; i ++)
+			result *= x;
+		return result;
+	}
+
+	public void calculateScore(int rowsCleared)
+	{
+		if (rowsCleared <= 0) return;
+		if (rowsCleared > 3) rowsCleared = 3;
+		score += 40 + 60 * simplePower(5, rowsCleared);
+		bestScore = Math.max(bestScore, score);
+	}
+
 	public void clearRow()
 	{
-		boolean chk = true;
+		boolean chk = true; int rowsCleared = 0;
 		for (int i = 0 ; i < rows ; i ++)
 		{
 			chk = true;
@@ -97,27 +169,17 @@ class Board extends JComponent {
 					chk = false;
 					break;
 				}
+
 			if (!chk) continue;
-
-
-			// to do: creating collapsing function here
-
-
-
-			// for (int j = 0 ; j < cols ; j ++)
-			// {
-			// 	for (int k = i ; k >= 1 ; k --)
-			// 	{
-			// 		occupied.get(k).
-			// 	}
-			// }
-
-
-
+			rowsCleared ++;
+			for (int j = 0 ; j < cols ; j ++)
+				for (int k = i ; k >= 1 ; k --)
+					occupied.get(k).set(j, occupied.get(k - 1).get(j)); // Integer is immutable.
 
 			for (int j = 0 ; j < cols ; j ++)
 				occupied.get(0).set(j, -1);
 		}
+		calculateScore(rowsCleared);
 	}
 
 	//  Check for complete rows that can be destroyed.
@@ -129,9 +191,9 @@ class Board extends JComponent {
 			canMove = true;
 			int upperBound = 7;
 			shape = rand.nextInt(upperBound);
-			shape = 0;
-			this.curCol = this.cols / 2 - 3;
-			this.curRow = -2;
+			shape = 0;//
+			curCol = cols / 2 - 3;
+			curRow = -2;
 			tetrisPiece.setShape(shape);
 		}
 		curRow ++;
@@ -147,7 +209,7 @@ class Board extends JComponent {
 				repaint();
 				return;
 			}
-			paintBoard();
+			setPermaBlock();
 		}
 		repaint();
 	}

@@ -17,7 +17,7 @@ class Tetrominos {
 		JFrame frame = new JFrame("Tetrominos!");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		Board board = new Board(16, 32);
+		Board board = new Board(10, 24);
 
 		frame.getContentPane().add(board);
 
@@ -36,7 +36,7 @@ class Tetrominos {
 		frame.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
 				int key = e.getKeyCode();
-				//System.out.println("key pressed " + e.getKeyCode());
+				System.out.println("key pressed " + e.getKeyCode());
 				if(key == KeyEvent.VK_UP) {
 					board.rotateLeft();
 				} else if (key == KeyEvent.VK_DOWN) {
@@ -45,6 +45,8 @@ class Tetrominos {
 					board.slide(-1);
 				}  else if (key == KeyEvent.VK_RIGHT) {
 					board.slide(1);
+				} else if (key == KeyEvent.VK_R) {
+					board.restartGame();
 				}
 			}
 
