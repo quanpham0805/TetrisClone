@@ -12,10 +12,11 @@ class Board extends JComponent {
 
 	private static final int SCALE = 30; // number of pixels per square
 	private int cols, rows, shape, curCol = -4, curRow = -4, score = 0, bestScore = 0, rightPanelWidth;
-	private boolean canMove = false;
+	private boolean canMove = false, gameOver = false;
 	private Piece tetrisPiece = new Piece();
 	private Random rand = new Random();
 	private ArrayList< ArrayList<Integer> > occupied = new ArrayList< ArrayList<Integer> >();
+	private String gameState = "Tetris!";
 
 
 	public Board(int cols, int rows)
@@ -62,7 +63,7 @@ class Board extends JComponent {
 				}
 	}
 
-	public void paintCurPiece(Graphics g)
+	public void paintCurrentPiece(Graphics g)
 	{
 		for (int i = 0 ; i < 4 ; i ++)
 		{
@@ -74,11 +75,12 @@ class Board extends JComponent {
 		}
 	}
 
-	public void drawCenterString(Graphics g, String text, Font font, int lineNo)
+	public void drawCenterString(Graphics g, String text, Font font, int lineNo, Color c)
 	{
 		FontMetrics metrics = g.getFontMetrics(font);
 		int x = cols * SCALE + (rightPanelWidth * SCALE - metrics.stringWidth(text)) / 2;
 		int y = SCALE * lineNo + metrics.getHeight();
+		g.setColor(c);
 		g.setFont(font);
 		g.drawString(text, x, y);
 	}
@@ -87,18 +89,18 @@ class Board extends JComponent {
 	{
 		int lineNo = rows / 2;
 		Font font = new Font("Roboto", Font.PLAIN, SCALE);
-		drawCenterString(g, "Tetris!", font, 1);
-		drawCenterString(g, "Press R to restart", font, rows - 3);
-		drawCenterString(g, Integer.toString(score), font, lineNo - 2);
-		drawCenterString(g, "Score", font, lineNo - 3);
-		drawCenterString(g, "Record", font, lineNo);
-		drawCenterString(g, Integer.toString(bestScore), font, lineNo + 1);
+		drawCenterString(g, gameState, font, 1, Color.red);
+		drawCenterString(g, "Press R to restart", font, rows - 3, Color.magenta);
+		drawCenterString(g, "Score", font, lineNo - 3, Color.white);
+		drawCenterString(g, Integer.toString(score), font, lineNo - 2, Color.white);
+		drawCenterString(g, "Record", font, lineNo, Color.yellow);
+		drawCenterString(g, Integer.toString(bestScore), font, lineNo + 1, Color.yellow);
 	}
 
 	public void paintComponent(Graphics g) {
 		drawBoard(g);
 		paintOccupiedBlock(g);
-		paintCurPiece(g);
+		paintCurrentPiece(g);
 		paintRightPanel(g);
 	}
 
@@ -138,6 +140,8 @@ class Board extends JComponent {
 		clearBoard();
 		score = 0;
 		canMove = false;
+		gameOver = false;
+		gameState = "Tetris!";
 	}
 
 
@@ -182,30 +186,39 @@ class Board extends JComponent {
 		calculateScore(rowsCleared);
 	}
 
-	//  Check for complete rows that can be destroyed.
+	public void genNextPiece()
+	{
+		int upperBound = 7;
+		shape = rand.nextInt(upperBound);
+		curCol = cols / 2 - 3;
+		curRow = -2;
+		tetrisPiece.setShape(shape);
+	}
+
 	public void nextTurn()
 	{
+		if (gameOver)
+		{
+			gameState = "GAME OVER";
+			repaint();
+			return;
+		}
+
 		clearRow();
 		if (!canMove)
 		{
 			canMove = true;
-			int upperBound = 7;
-			shape = rand.nextInt(upperBound);
-			shape = 0;//
-			curCol = cols / 2 - 3;
-			curRow = -2;
-			tetrisPiece.setShape(shape);
+			genNextPiece();
 		}
 		curRow ++;
 		if (checkCollision())
 		{
 			curRow --;
 			canMove = false;
-			// check game over here huh
+			// check game over here
 			if (curRow < 0)
 			{
-				clearBoard();
-				canMove = false;
+				gameOver = true;
 				repaint();
 				return;
 			}

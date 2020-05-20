@@ -2,15 +2,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
-// The class that sets up the user interface
-// for the Tetrominos game. You will not need to
-// edit this file, but it might be worth reading through it.
-
-class Tetrominos {
+class Tetris {
 
 	private static void createAndShowGUI() {
 		//Create and set up the window.
@@ -26,7 +21,7 @@ class Tetrominos {
 		frame.setResizable(false);
 		frame.setVisible(true);
 
-		Timer timer = new Timer(70, new ActionListener() {
+		Timer timer = new Timer(750, new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				board.nextTurn();
 			}
@@ -36,7 +31,7 @@ class Tetrominos {
 		frame.addKeyListener(new KeyListener() {
 			public void keyPressed(KeyEvent e) {
 				int key = e.getKeyCode();
-				System.out.println("key pressed " + e.getKeyCode());
+				// System.out.println("key pressed " + e.getKeyCode());
 				if(key == KeyEvent.VK_UP) {
 					board.rotateLeft();
 				} else if (key == KeyEvent.VK_DOWN) {
